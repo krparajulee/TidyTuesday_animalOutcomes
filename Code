@@ -1,0 +1,62 @@
+library(tidytuesdayR) #to load TidyTuesday datasets
+library(tidyverse)    #to tidy and visualize data
+library(ggblur)       #to blur the points; more blur == more accumulation
+library(patchwork)    #to combined two plots
+
+#loading the dataset
+tuesdata <- tidytuesdayR::tt_load(2020, week = 30) 
+
+outcomes <- tuesdata$animal_outcomes
+outcomes$animal_type<- as.factor(outcomes$animal_type)
+outcomes$outcome <- as.factor(outcomes$outcome)
+
+#selecting only 3 major outcomes
+result <- c("Reclaimed", "Rehomed", "Euthanized")
+outcomes <- outcomes%>% select(-Total)%>% filter(outcome %in% result)
+
+#converting wide data to long data
+outcomes.long <- gather(outcomes,states,value,-c("year","animal_type","outcome"))
+
+country <- outcomes.long %>% 
+  filter( animal_type %in% c("Dogs","Cats"))%>%
+  ggplot(aes(year,value))+ 
+  geom_smooth(se=FALSE)+
+  geom_point_blur(color="yellow",size=0.4, blur_size=0.4)+
+  facet_grid(outcome~animal_type)+  #creating the facets
+  theme( panel.grid= element_blank(),
+         panel.grid.major = element_blank(),
+         panel.grid.minor = element_blank(),text= element_text(color="steelblue"))+
+  theme(plot.background=element_rect(fill="#000817"),panel.background=element_rect(fill="#000817"))+
+  theme(axis.ticks.x= element_blank(), axis.ticks.y= element_blank())+ labs(y="", x="")+
+  #customizing the facet texts and background
+  theme(strip.background = element_rect(colour="#000817", fill="#000817", 
+                                        size=1.5, linetype="solid"))+
+  theme(strip.text.x = element_text(size=12, color="white",
+                                    face="bold.italic"),
+        strip.text.y = element_text(size=12, color="white",
+                                    face="bold.italic"))
+
+
+state_wise <- outcomes.long %>% 
+  filter( animal_type %in% c("Dogs","Cats"))%>%
+  ggplot(aes(year,value))+ 
+  geom_smooth(aes(color=states),se=FALSE)+
+  facet_grid(outcome~animal_type)+
+  theme( panel.grid= element_blank(),
+         panel.grid.major = element_blank(),
+         panel.grid.minor = element_blank(),text= element_text(color="steelblue"))+
+  theme(plot.background=element_rect(fill="#000817"),panel.background=element_rect(fill="#000817"))+
+  theme(axis.ticks.x= element_blank(), axis.ticks.y= element_blank())+ labs(y="", x="", caption="By: Kundan")+
+  theme(strip.background = element_rect(colour="#000817", fill="#000817", 
+                                        size=1.5, linetype="solid"))+
+  theme(strip.text.x = element_text(size=12, color="white",
+                                    face="bold.italic"),
+        strip.text.y = element_text(size=12, color="white",
+                                    face="bold.italic"))+
+  #customizing the legend
+  theme(legend.text = element_text(face="bold",color = "white",size=10),
+        legend.background = element_rect(fill = "#000817"),
+        legend.title = element_blank())
+
+country+state_wise
+
